@@ -17,7 +17,7 @@
 
 ### structure
 - todos are local to the folder you are standing in when executing commands
-- todo named root folder of a todo task is **YYYY-MM-DD** format
+- todo named root folder of a todo task is **YYYYMMDD** format
     - inside is a file per task
         - formatted according to:
         - **id?** (perhaps a checksum derived from the task contents)
@@ -28,7 +28,7 @@
     - searchable on date, name, description, keywords, priority
         - filters will be composable
         - i.e (((this and that) and not thing) or other)
-    - done tasks are in done folder inside the **YYYY-MM-DD** folder
+    - done tasks are in done folder inside the **YYYYMMDD** folder
     - **example folder structure**
         - dodos (gives the todos a root path to not collide with any other folders which may use the same naming)
             - 20260623 (folder)
