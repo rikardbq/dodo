@@ -12,6 +12,8 @@
     - --filter -f (filter "dsl" goes here)
     - --all -a (lists all the tasks, may need to be paginated or something)
     - (maybe some flag to shortcut common use cases, i.e list all high prio tasks, kind of like `dodo ls --high`, otherwise `dodo ls --filter p:high`)
+- done
+    - \<name\> or \<id\>
 
 ### structure
 - todos are local to the folder you are standing in when executing commands
@@ -21,9 +23,22 @@
         - **id?** (perhaps a checksum derived from the task contents)
         - **name**
         - **description** (optional)
-        - **keywords** (optional)
         - **priority** (optional)
+        - **keywords** (optional)
     - searchable on date, name, description, keywords, priority
         - filters will be composable
         - i.e (((this and that) and not thing) or other)
     - done tasks are in done folder inside the **YYYY-MM-DD** folder
+    - **example folder structure**
+        - dodos (gives the todos a root path to not collide with any other folders which may use the same naming)
+            - 20260623 (folder)
+                - update_readme (name of file)\
+                \[contents\]\
+                id: ???\
+                name: update_readme\
+                description: update the readme with some examples\
+                priority: low\
+                keywords: readme, examples
+                
+                - done (folder)
+                    - create_repo (name of done file)
