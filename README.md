@@ -1,6 +1,6 @@
 ## draft
 
-![dodo](./dodo_mascot2.webp)
+![dodo](./dodo_mascot.webp)
 
 ### commands
 - help
