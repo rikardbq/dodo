@@ -1,5 +1,7 @@
 ## draft
 
+![dodo](./dodo_mascot2.webp)
+
 ### commands
 - help
 - new
@@ -25,5 +27,3 @@
         - filters will be composable
         - i.e (((this and that) and not thing) or other)
     - done tasks are in done folder inside the **YYYY-MM-DD** folder
-
-![dodo](./dodo_mascot.webp)
