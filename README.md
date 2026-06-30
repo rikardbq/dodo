@@ -3,11 +3,14 @@
 ![dodo](./mascot.webp)
 
 ### ideas for the commands
-    - new (name#description#keywords)
-        - `dodo new test_update_packages#this is a description#medium,risky,testing`
-        - no description, `dodo new test_update_packages##medium,risky,testing`
-        - no keywords, `dodo new test_update_packages#this is a description`
-        - no description or keywords `dodo new test_update_packages`
+- **new** (name#description#keywords)
+    - `dodo new "update packages#this is a description#medium,risky,testing"`
+    - no description, `dodo new "update packages##medium,risky,testing"`
+    - no keywords, `dodo new "update packages#this is a description"`
+    - no description or keywords `dodo new "update packages"`
+- **done** (name)
+    - `dodo done "update packages"`
+        - this moves the task from its date folder to the **done** folder inside of that
 
 ### commands
 - help
@@ -18,6 +21,7 @@
 - list / ls (lists latest 20 or 50 tasks)
     - --filter -f (filter "dsl" goes here)
     - --all -a (lists all the tasks, may need to be paginated or something)
+    - --done -d (list all done tasks)
     - (maybe some flag to shortcut common use cases, i.e list all high prio tasks, kind of like `dodo ls --high`, otherwise `dodo ls --filter p:high`)
 - done
     - \<name\> or \<id\>
@@ -39,13 +43,12 @@
     - **example folder structure**
         - dodos (gives the todos a root path to not collide with any other folders which may use the same naming)
             - 20260623 (folder)
-                - update_readme (name of file)\
-                \[contents\]\
-                id: ???\
-                name: update_readme\
-                description: update the readme with some examples\
-                priority: low\
-                keywords: readme, examples
-                
+                - update_readme (name of file)
+                - ```
+                    update_readme
+                    #####
+                    update the readme with some examples
+                    #####
+                    low,readme,examples
                 - done (folder)
                     - create_repo (name of done file)
