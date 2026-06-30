@@ -2,6 +2,13 @@
 
 ![dodo](./mascot.webp)
 
+### ideas for the commands
+    - new (name#description#keywords)
+        - `dodo new test_update_packages#this is a description#medium,risky,testing`
+        - no description, `dodo new test_update_packages##medium,risky,testing`
+        - no keywords, `dodo new test_update_packages#this is a description`
+        - no description or keywords `dodo new test_update_packages`
+
 ### commands
 - help
 - new

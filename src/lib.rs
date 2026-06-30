@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read};
+use std::{fs::{self, File}, io::{Read, Write}};
 
 pub fn get_file_content(path: &str) -> Vec<u8> {
     let mut file_buf = Vec::<u8>::new();
