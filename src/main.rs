@@ -17,7 +17,7 @@ fn main() {
                 if args.len() == 3 {
                     let task: Vec<&str> = args[2].split("#").collect();
                     if task.len() < 1 {
-                        panic!("Task must have at least a title");
+                        panic!("Task must have at least a title!");
                     }
                     let mut stringy = String::new();
                     task.iter().enumerate().for_each(|(i, x)| {
@@ -35,7 +35,7 @@ fn main() {
                         .expect("Failed to write to file!");
                 } else {
                     panic!(
-                        "[ new ] command only accepts 1 argument! Format is [ title#optional description#key,words ]"
+                        "[ new ] command only accepts 1 argument! Format is [ dodo new \"title#optional description#optional,key,words\" ]"
                     );
                 }
             }
@@ -46,7 +46,6 @@ fn main() {
                         .unwrap()
                         .filter_map(|e| e.ok())
                         .find_map(|e| {
-                            println!("{:?}", e.file_name());
                             fs::read_dir(format!("dodos/{}", e.file_name().to_string_lossy()))
                                 .unwrap()
                                 .filter_map(|ie| ie.ok())
@@ -57,12 +56,12 @@ fn main() {
                             .to_path_buf()
                             .join("done");
                         fs::copy(file.path(), move_path.join(file.file_name()))
-                            .expect("Failed to move task to done!");
-                        fs::remove_file(file.path()).expect("Failed to remove file from old path!");
+                            .expect("Failed to move file to done folder!");
+                        fs::remove_file(file.path()).expect("Failed to remove file from old path folder!");
                     }
                 } else {
                     panic!(
-                        "[ new ] command only accepts 1 argument! Format is [ title#optional description#key,words ]"
+                        "[ done ] command only accepts 1 argument! Format is [ dodo done \"title\" ]"
                     );
                 }
             }
