@@ -1,9 +1,31 @@
 use chrono::Local;
+use std::any::Any;
 use std::env;
 use std::fs;
 use std::path::Path;
 
 use dodo::get_file_content;
+
+
+// testing some reflect magic
+// use procedural macros
+// field_types crate?
+#[derive(Debug)]
+pub struct Arguments {
+    pub title: String,
+    pub description: String,
+    pub keywords: Vec<String>,
+}
+
+impl Arguments {
+    pub fn default() -> Self {
+        Self {
+            title: String::new(),
+            description: String::new(),
+            keywords: Vec::new()
+        }
+    }
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -22,6 +44,9 @@ fn main() {
                     let mut stringy = String::new();
                     task.iter().enumerate().for_each(|(i, x)| {
                         if i == 0 {
+                            if x.len() == 0 {
+                                panic!("Title must not be empty!");
+                            }
                             stringy = format!("{stringy}{}", *x);
                         } else {
                             stringy = format!("{stringy}\r\n#####\r\n{}", *x);
@@ -57,7 +82,8 @@ fn main() {
                             .join("done");
                         fs::copy(file.path(), move_path.join(file.file_name()))
                             .expect("Failed to move file to done folder!");
-                        fs::remove_file(file.path()).expect("Failed to remove file from old path folder!");
+                        fs::remove_file(file.path())
+                            .expect("Failed to remove file from old path folder!");
                     }
                 } else {
                     panic!(
