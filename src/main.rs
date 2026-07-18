@@ -1,34 +1,16 @@
 use chrono::Local;
-use std::any::Any;
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::path::Path;
 
 use dodo::get_file_content;
 
-
-// testing some reflect magic
-// use procedural macros
-// field_types crate?
-#[derive(Debug)]
-pub struct Arguments {
-    pub title: String,
-    pub description: String,
-    pub keywords: Vec<String>,
-}
-
-impl Arguments {
-    pub fn default() -> Self {
-        Self {
-            title: String::new(),
-            description: String::new(),
-            keywords: Vec::new()
-        }
-    }
-}
+const accepted_flags: [&str; 6] = ["title", "t", "desc", "d", "keys", "k"];
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let flag_vals: HashMap<String, String> = HashMap::new();
     println!("args length = {}", args.len());
     if args.len() >= 2 {
         let date = Local::now().format("%Y%m%d").to_string();

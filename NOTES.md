@@ -1,4 +1,5 @@
 ### Arguments struct
+- **This will become its own crate later**
 - Derive macro for enabling reflection of the struct
 - adds function `parse_args(args: Vec<String>) -> parse_args(env::args)`
     - i.e
