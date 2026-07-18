@@ -6,11 +6,11 @@ use std::path::Path;
 
 use dodo::get_file_content;
 
-const accepted_flags: [&str; 6] = ["title", "t", "desc", "d", "keys", "k"];
+const ACCEPTED_FLAGS: [&str; 6] = ["title", "t", "desc", "d", "keys", "k"];
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let flag_vals: HashMap<String, String> = HashMap::new();
+    let mut flag_vals: HashMap<String, String> = HashMap::new();
     println!("args length = {}", args.len());
     if args.len() >= 2 {
         let date = Local::now().format("%Y%m%d").to_string();
@@ -18,6 +18,19 @@ fn main() {
         let done_path_string = format!("{path_string}/done");
         match args[1].as_str() {
             "new" => {
+                // NEW STUFF START
+                args.iter().enumerate().for_each(|(i, x)| {
+                    if ACCEPTED_FLAGS.contains(&x.replace("-", "").as_str()) {
+                        if args.len() == i + 1 {
+                            panic!("Flag {x} has no value!");
+                        }
+                        let _ = flag_vals.insert(x.clone(), args[i + 1].to_string());
+                    }
+                });
+                if !flag_vals.contains_key("title") {
+                    panic!("Task must have at least a title!");
+                }
+                // NEW STUFF END
                 if args.len() == 3 {
                     let task: Vec<&str> = args[2].split("#").collect();
                     if task.len() < 1 {
