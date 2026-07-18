@@ -12,3 +12,7 @@ pub fn get_file_content(path: &str) -> Vec<u8> {
 
     file_buf
 }
+
+pub fn check_args() -> bool {
+    true
+}

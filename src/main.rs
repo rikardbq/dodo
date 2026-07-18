@@ -6,7 +6,7 @@ use std::path::Path;
 
 use dodo::get_file_content;
 
-const ACCEPTED_FLAGS: [&str; 6] = ["title", "t", "desc", "d", "keys", "k"];
+const ACCEPTED_FLAGS: [&str; 6] = ["title", "desc", "keys", "t", "d", "k"];
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -18,46 +18,48 @@ fn main() {
         let done_path_string = format!("{path_string}/done");
         match args[1].as_str() {
             "new" => {
-                // NEW STUFF START
                 args.iter().enumerate().for_each(|(i, x)| {
-                    if ACCEPTED_FLAGS.contains(&x.replace("-", "").as_str()) {
-                        if args.len() == i + 1 {
-                            panic!("Flag {x} has no value!");
+                    if x.starts_with("-") {
+                        let formatted_flag = x.replace("-", "");
+                        if ACCEPTED_FLAGS.contains(&formatted_flag.as_str()) {
+                            if args.len() == i + 1 {
+                                panic!("Flag {x} has no value!");
+                            }
+                            let _ = flag_vals.insert(formatted_flag.clone(), args[i + 1].to_string());
+                        } else {
+                            panic!("Unknown flag! {x}");
                         }
-                        let _ = flag_vals.insert(x.clone(), args[i + 1].to_string());
                     }
                 });
-                if !flag_vals.contains_key("title") {
+                if !flag_vals.contains_key("title") && !flag_vals.contains_key("t") {
                     panic!("Task must have at least a title!");
                 }
-                // NEW STUFF END
-                if args.len() == 3 {
-                    let task: Vec<&str> = args[2].split("#").collect();
-                    if task.len() < 1 {
-                        panic!("Task must have at least a title!");
-                    }
-                    let mut stringy = String::new();
-                    task.iter().enumerate().for_each(|(i, x)| {
-                        if i == 0 {
-                            if x.len() == 0 {
-                                panic!("Title must not be empty!");
-                            }
-                            stringy = format!("{stringy}{}", *x);
-                        } else {
-                            stringy = format!("{stringy}\r\n#####\r\n{}", *x);
-                        }
-                    });
-                    let path = Path::new(&done_path_string);
-                    if !path.is_dir() {
-                        fs::create_dir_all(path).expect("Folder for task could not be created!");
-                    }
-                    fs::write(format!("{path_string}/{}", task[0]), stringy)
-                        .expect("Failed to write to file!");
-                } else {
-                    panic!(
-                        "[ new ] command only accepts 1 argument! Format is [ dodo new \"title#optional description#optional,key,words\" ]"
-                    );
+                let title = match flag_vals.get("title") {
+                    Some(v) => v,
+                    None => flag_vals.get("t").unwrap()
+                };
+                let desc = match flag_vals.get("desc") {
+                    Some(v) => Some(v),
+                    None => flag_vals.get("d")
+                };
+                let keys = match flag_vals.get("keys") {
+                    Some(v) => Some(v),
+                    None => flag_vals.get("k")
+                };
+                let path = Path::new(&done_path_string);
+                if !path.is_dir() {
+                    fs::create_dir_all(path).expect("Folder for task could not be created!");
                 }
+                fs::write(
+                    format!("{path_string}/{}", title),
+                    format!(
+                        "title={}\r\ndesc={}\r\nkeys={}\r\n",
+                        title,
+                        desc.unwrap_or(&"".to_string()),
+                        keys.unwrap_or(&"".to_string())
+                    ),
+                )
+                .expect("Failed to write to file!");
             }
             "done" => {
                 if args.len() == 3 {
