@@ -1,16 +1,12 @@
 use chrono::Local;
-use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::path::Path;
 
-use dodo::get_file_content;
-
-const ACCEPTED_FLAGS: [&str; 6] = ["title", "desc", "keys", "t", "d", "k"];
+use dodo::{get_file_content, parse_flags};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let mut flag_vals: HashMap<String, String> = HashMap::new();
     println!("args length = {}", args.len());
     if args.len() >= 2 {
         let date = Local::now().format("%Y%m%d").to_string();
@@ -18,34 +14,8 @@ fn main() {
         let done_path_string = format!("{path_string}/done");
         match args[1].as_str() {
             "new" => {
-                args.iter().enumerate().for_each(|(i, x)| {
-                    if x.starts_with("-") {
-                        let formatted_flag = x.replace("-", "");
-                        if ACCEPTED_FLAGS.contains(&formatted_flag.as_str()) {
-                            if args.len() == i + 1 {
-                                panic!("Flag {x} has no value!");
-                            }
-                            let _ = flag_vals.insert(formatted_flag.clone(), args[i + 1].to_string());
-                        } else {
-                            panic!("Unknown flag! {x}");
-                        }
-                    }
-                });
-                if !flag_vals.contains_key("title") && !flag_vals.contains_key("t") {
-                    panic!("Task must have at least a title!");
-                }
-                let title = match flag_vals.get("title") {
-                    Some(v) => v,
-                    None => flag_vals.get("t").unwrap()
-                };
-                let desc = match flag_vals.get("desc") {
-                    Some(v) => Some(v),
-                    None => flag_vals.get("d")
-                };
-                let keys = match flag_vals.get("keys") {
-                    Some(v) => Some(v),
-                    None => flag_vals.get("k")
-                };
+                let flags = parse_flags(args.clone());
+                let title = flags.title.expect("Task must have at least a title!");
                 let path = Path::new(&done_path_string);
                 if !path.is_dir() {
                     fs::create_dir_all(path).expect("Folder for task could not be created!");
@@ -55,8 +25,8 @@ fn main() {
                     format!(
                         "title={}\r\ndesc={}\r\nkeys={}\r\n",
                         title,
-                        desc.unwrap_or(&"".to_string()),
-                        keys.unwrap_or(&"".to_string())
+                        flags.desc.unwrap_or_default(),
+                        flags.keys.unwrap_or_default().join(",")
                     ),
                 )
                 .expect("Failed to write to file!");
