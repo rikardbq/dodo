@@ -1,5 +1,53 @@
 use std::{collections::HashMap, fs::File, io::Read};
 
+// example structs
+#[derive(Clone)]
+pub struct Flags {
+    pub title: Option<String>,
+}
+
+#[derive(Clone)]
+pub enum Command {
+    New(Flags),
+}
+
+impl Flags {
+    pub fn default() -> Self {
+        Self { title: None }
+    }
+    pub fn set_title(&mut self, title: String) {
+        self.title = Some(title);
+    }
+}
+
+pub struct Arguments {
+    pub command: Option<Command>,
+}
+
+impl Arguments {
+    pub fn default() -> Self {
+        Self { command: None }
+    }
+    pub fn set_command(&mut self, command: Command) {
+        self.command = Some(command);
+    }
+}
+
+pub fn parse_args() -> Arguments {
+    let mut arg = Arguments::default();
+    arg.set_command(Command::New(Flags::default()));
+    let a = match arg.command.clone().unwrap() {
+        Command::New(f) => {
+            if f.title.unwrap() == "asd".to_string() {}
+            Some("")
+        }
+        _ => None,
+    };
+
+    arg
+}
+// example structs end
+
 const ACCEPTED_FLAGS: [&str; 6] = ["title", "desc", "keys", "t", "d", "k"];
 pub struct CliFlags {
     pub title: Option<String>,
