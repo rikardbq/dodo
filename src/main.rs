@@ -16,16 +16,16 @@ fn main() {
         let arguments = parse_args(&args);
         match arguments.command.unwrap() {
             Command::New(flags) => {
-                let title = flags.title.expect("Task must have at least a title!");
+                let name = flags.name.expect("Task must have at least a name!");
                 let path = Path::new(&done_path_string);
                 if !path.is_dir() {
                     fs::create_dir_all(path).expect("Folder for task could not be created!");
                 }
                 fs::write(
-                    format!("{path_string}/{}", title),
+                    format!("{path_string}/{}", name),
                     format!(
-                        "title={}\r\ndesc={}\r\nkeys={}\r\n",
-                        title,
+                        "name={}\r\ndesc={}\r\nkeys={}\r\n",
+                        name,
                         flags.desc.unwrap_or_default(),
                         flags.keys.unwrap_or_default().join(",")
                     ),
@@ -35,7 +35,7 @@ fn main() {
             Command::Done(val) => {
                 if args.len() > 3 {
                     panic!(
-                        "[ done ] command only accepts 1 argument! Format is [ dodo done \"title\" ]"
+                        "[ done ] command only accepts 1 argument! Format is [ dodo done \"name\" ]"
                     );
                 }
                 if let Some(file) = fs::read_dir("dodos")
@@ -69,7 +69,7 @@ fn main() {
     assert!(file_string_split.len() == 3);
     println!("AFTER: {file_string_split:?}");
     println!(
-        "TITLE={}\nDESC={}\nKEYWORDS={}",
+        "NAME={}\nDESC={}\nKEYWORDS={}",
         file_string_split[0], file_string_split[1], file_string_split[2]
     );
     let keywords_split = file_string_split[2].split(",").collect::<Vec<_>>();

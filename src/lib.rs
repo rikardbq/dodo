@@ -2,7 +2,7 @@ use std::{fs::File, io::Read};
 
 #[derive(Clone, Debug)]
 pub struct New {
-    pub title: Option<String>,
+    pub name: Option<String>,
     pub desc: Option<String>,
     pub keys: Option<Vec<String>>,
 }
@@ -29,7 +29,7 @@ trait Flags {
 impl Flags for New {
     fn default() -> Self {
         Self {
-            title: None,
+            name: None,
             desc: None,
             keys: None,
         }
@@ -37,8 +37,8 @@ impl Flags for New {
 }
 
 impl New {
-    pub fn set_title(&mut self, title: String) {
-        self.title = Some(title);
+    pub fn set_name(&mut self, name: String) {
+        self.name = Some(name);
     }
     pub fn set_desc(&mut self, desc: String) {
         self.desc = Some(desc);
@@ -77,7 +77,7 @@ pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
             if let Some(cmd) = &mut args.command {
                 match cmd {
                     Command::New(f) => match formatted_flag.as_str() {
-                        "title" | "t" => f.set_title(flag_val.clone()),
+                        "name" | "n" => f.set_name(flag_val.clone()),
                         "desc" | "d" => f.set_desc(flag_val.clone()),
                         "keys" | "k" => {
                             f.set_keys(flag_val.split(" ").map(|x| x.to_string()).collect())
