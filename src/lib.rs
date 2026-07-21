@@ -1,22 +1,50 @@
-use std::{collections::HashMap, fs::File, io::Read};
+use std::{fs::File, io::Read};
 
-// example structs
-#[derive(Clone)]
-pub struct Flags {
+#[derive(Clone, Debug)]
+pub struct New {
     pub title: Option<String>,
+    pub desc: Option<String>,
+    pub keys: Option<Vec<String>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Command {
-    New(Flags),
+    New(New),
+    Done(String),
 }
 
-impl Flags {
-    pub fn default() -> Self {
-        Self { title: None }
+// impl fmt::Display for Command {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         match self {
+//             Command::New(_) => write!(f, "new"),
+//             _ => write!(f, "{:?}", self),
+//         }
+//     }
+// }
+
+trait Flags {
+    fn default() -> Self;
+}
+
+impl Flags for New {
+    fn default() -> Self {
+        Self {
+            title: None,
+            desc: None,
+            keys: None,
+        }
     }
+}
+
+impl New {
     pub fn set_title(&mut self, title: String) {
         self.title = Some(title);
+    }
+    pub fn set_desc(&mut self, desc: String) {
+        self.desc = Some(desc);
+    }
+    pub fn set_keys(&mut self, keys: Vec<String>) {
+        self.keys = Some(keys);
     }
 }
 
@@ -33,45 +61,49 @@ impl Arguments {
     }
 }
 
-pub fn parse_args() -> Arguments {
-    let mut arg = Arguments::default();
-    arg.set_command(Command::New(Flags::default()));
-    let a = match arg.command.clone().unwrap() {
-        Command::New(f) => {
-            if f.title.unwrap() == "asd".to_string() {}
-            Some("")
-        }
-        _ => None,
-    };
-
-    arg
-}
-// example structs end
-
-const ACCEPTED_FLAGS: [&str; 6] = ["title", "desc", "keys", "t", "d", "k"];
-pub struct CliFlags {
-    pub title: Option<String>,
-    pub desc: Option<String>,
-    pub keys: Option<Vec<String>>,
+pub fn arg_has_val(cli_args: &Vec<String>, idx: usize) -> bool {
+    cli_args.len() == idx + 1
 }
 
-impl CliFlags {
-    pub fn default() -> Self {
-        Self {
-            title: None,
-            desc: None,
-            keys: None,
+pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
+    let mut args = Arguments::default();
+    cli_args.iter().enumerate().for_each(|(i, x)| {
+        if x.starts_with("-") {
+            let formatted_flag = x.replace("-", "");
+            if arg_has_val(cli_args, i) {
+                panic!("Flag {x} has no value!");
+            }
+            let flag_val = &cli_args[i + 1];
+            if let Some(cmd) = &mut args.command {
+                match cmd {
+                    Command::New(f) => match formatted_flag.as_str() {
+                        "title" | "t" => f.set_title(flag_val.clone()),
+                        "desc" | "d" => f.set_desc(flag_val.clone()),
+                        "keys" | "k" => {
+                            f.set_keys(flag_val.split(" ").map(|x| x.to_string()).collect())
+                        }
+                        _ => panic!("Unknown flag! {formatted_flag}"),
+                    },
+                    _ => {}
+                }
+            }
+        } else {
+            match x.as_str() {
+                "new" => {
+                    args.set_command(Command::New(New::default()));
+                },
+                "done" => {
+                    if arg_has_val(cli_args, i) {
+                        panic!("Command {x} has no value!");
+                    }
+                    args.set_command(Command::Done(cli_args[i + 1].clone()));
+                }
+                _ => {}
+            };
         }
-    }
-    pub fn set_title(&mut self, title: String) {
-        self.title = Some(title);
-    }
-    pub fn set_desc(&mut self, desc: String) {
-        self.desc = Some(desc);
-    }
-    pub fn set_keys(&mut self, keys: Vec<String>) {
-        self.keys = Some(keys);
-    }
+    });
+
+    args
 }
 
 pub fn get_file_content(path: &str) -> Vec<u8> {
@@ -85,43 +117,4 @@ pub fn get_file_content(path: &str) -> Vec<u8> {
     .read_to_end(&mut file_buf);
 
     file_buf
-}
-
-pub fn parse_flags(cli_args: Vec<String>) -> CliFlags {
-    let mut flags = CliFlags::default();
-    let mut flag_vals: HashMap<String, String> = HashMap::new();
-    cli_args.iter().enumerate().for_each(|(i, x)| {
-        if x.starts_with("-") {
-            let formatted_flag = x.replace("-", "");
-            if ACCEPTED_FLAGS.contains(&formatted_flag.as_str()) {
-                if cli_args.len() == i + 1 {
-                    panic!("Flag {x} has no value!");
-                }
-                let _ = flag_vals.insert(formatted_flag.clone(), cli_args[i + 1].to_string());
-            } else {
-                panic!("Unknown flag! {x}");
-            }
-        }
-    });
-    if let Some(title) = match flag_vals.get("title") {
-        Some(v) => Some(v),
-        None => flag_vals.get("t"),
-    } {
-        flags.set_title(title.clone());
-    }
-    if let Some(desc) = match flag_vals.get("desc") {
-        Some(v) => Some(v),
-        None => flag_vals.get("d"),
-    } {
-        flags.set_desc(desc.clone());
-    }
-    if let Some(keys) = match flag_vals.get("keys") {
-        Some(v) => Some(v),
-        None => flag_vals.get("k"),
-    } {
-        let k: Vec<String> = keys.split(" ").map(|x| x.to_string()).collect();
-        flags.set_keys(k);
-    }
-
-    flags
 }

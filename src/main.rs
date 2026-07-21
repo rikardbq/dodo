@@ -1,9 +1,10 @@
 use chrono::Local;
+use dodo::Command;
 use std::env;
 use std::fs;
 use std::path::Path;
 
-use dodo::{get_file_content, parse_flags};
+use dodo::{get_file_content, parse_args};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -12,9 +13,9 @@ fn main() {
         let date = Local::now().format("%Y%m%d").to_string();
         let path_string = format!("dodos/{date}");
         let done_path_string = format!("{path_string}/done");
-        match args[1].as_str() {
-            "new" => {
-                let flags = parse_flags(args.clone());
+        let arguments = parse_args(&args);
+        match arguments.command.unwrap() {
+            Command::New(flags) => {
                 let title = flags.title.expect("Task must have at least a title!");
                 let path = Path::new(&done_path_string);
                 if !path.is_dir() {
@@ -31,35 +32,30 @@ fn main() {
                 )
                 .expect("Failed to write to file!");
             }
-            "done" => {
-                if args.len() == 3 {
-                    let title = args[2].as_str();
-                    if let Some(file) = fs::read_dir("dodos")
-                        .unwrap()
-                        .filter_map(|e| e.ok())
-                        .find_map(|e| {
-                            fs::read_dir(format!("dodos/{}", e.file_name().to_string_lossy()))
-                                .unwrap()
-                                .filter_map(|ie| ie.ok())
-                                .find(|ie| ie.file_name() == title)
-                        })
-                    {
-                        let move_path = Path::new(file.path().parent().unwrap())
-                            .to_path_buf()
-                            .join("done");
-                        fs::copy(file.path(), move_path.join(file.file_name()))
-                            .expect("Failed to move file to done folder!");
-                        fs::remove_file(file.path())
-                            .expect("Failed to remove file from old path folder!");
-                    }
-                } else {
+            Command::Done(val) => {
+                if args.len() > 3 {
                     panic!(
                         "[ done ] command only accepts 1 argument! Format is [ dodo done \"title\" ]"
                     );
                 }
-            }
-            _ => {
-                println!("unknown command sry!");
+                if let Some(file) = fs::read_dir("dodos")
+                    .unwrap()
+                    .filter_map(|e| e.ok())
+                    .find_map(|e| {
+                        fs::read_dir(format!("dodos/{}", e.file_name().to_string_lossy()))
+                            .unwrap()
+                            .filter_map(|ie| ie.ok())
+                            .find(|ie| *ie.file_name() == *val)
+                    })
+                {
+                    let move_path = Path::new(file.path().parent().unwrap())
+                        .to_path_buf()
+                        .join("done");
+                    fs::copy(file.path(), move_path.join(file.file_name()))
+                        .expect("Failed to move file to done folder!");
+                    fs::remove_file(file.path())
+                        .expect("Failed to remove file from old path folder!");
+                }
             }
         }
         println!("{} {}", args[0], args[1]);
