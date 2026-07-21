@@ -1,5 +1,6 @@
 use chrono::Local;
 use dodo::Command;
+use dodo::find_file;
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -38,21 +39,23 @@ fn main() {
                         "[ done ] command only accepts 1 argument! Format is [ dodo done \"name\" ]"
                     );
                 }
-                if let Some(file) = fs::read_dir("dodos")
-                    .unwrap()
-                    .filter_map(|e| e.ok())
-                    .find_map(|e| {
-                        fs::read_dir(format!("dodos/{}", e.file_name().to_string_lossy()))
-                            .unwrap()
-                            .filter_map(|ie| ie.ok())
-                            .find(|ie| *ie.file_name() == *val)
-                    })
-                {
+                if let Some(file) = find_file(&val) {
                     let move_path = Path::new(file.path().parent().unwrap())
                         .to_path_buf()
                         .join("done");
                     fs::copy(file.path(), move_path.join(file.file_name()))
                         .expect("Failed to move file to done folder!");
+                    fs::remove_file(file.path())
+                        .expect("Failed to remove file from old path folder!");
+                }
+            }
+            Command::Remove(val) => {
+                if args.len() > 3 {
+                    panic!(
+                        "[ remove | rm ] command only accepts 1 argument! Format is [ dodo rm \"name\" ]"
+                    );
+                }
+                if let Some(file) = find_file(&val) {
                     fs::remove_file(file.path())
                         .expect("Failed to remove file from old path folder!");
                 }

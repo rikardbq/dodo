@@ -1,4 +1,7 @@
-use std::{fs::File, io::Read};
+use std::{
+    fs::{self, DirEntry, File},
+    io::Read,
+};
 
 #[derive(Clone, Debug)]
 pub struct New {
@@ -11,6 +14,7 @@ pub struct New {
 pub enum Command {
     New(New),
     Done(String),
+    Remove(String),
 }
 
 // impl fmt::Display for Command {
@@ -91,12 +95,18 @@ pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
             match x.as_str() {
                 "new" => {
                     args.set_command(Command::New(New::default()));
-                },
+                }
                 "done" => {
                     if arg_has_val(cli_args, i) {
                         panic!("Command {x} has no value!");
                     }
                     args.set_command(Command::Done(cli_args[i + 1].clone()));
+                }
+                "remove" | "rm" => {
+                    if arg_has_val(cli_args, i) {
+                        panic!("Command {x} has no value!");
+                    }
+                    args.set_command(Command::Remove(cli_args[i + 1].clone()));
                 }
                 _ => {}
             };
@@ -117,4 +127,31 @@ pub fn get_file_content(path: &str) -> Vec<u8> {
     .read_to_end(&mut file_buf);
 
     file_buf
+}
+
+pub fn find_file(name: &str) -> Option<DirEntry> {
+    fs::read_dir("dodos")
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .find_map(|e| {
+            fs::read_dir(format!("dodos/{}", e.file_name().to_string_lossy()))
+                .unwrap()
+                .filter_map(|ie| ie.ok())
+                .map(|ie| {
+                    if ie.metadata().unwrap().is_dir() {
+                        fs::read_dir(format!(
+                            "dodos/{}/{}",
+                            e.file_name().to_string_lossy(),
+                            ie.file_name().to_string_lossy()
+                        ))
+                        .unwrap()
+                        .filter_map(|iie| iie.ok())
+                        .find(|iie| iie.file_name() == name)
+                    } else {
+                        Some(ie)
+                    }
+                })
+                .find(|ie| ie.is_some() && ie.as_ref().unwrap().file_name() == name)
+                .unwrap()
+        })
 }
