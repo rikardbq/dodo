@@ -1,6 +1,7 @@
 use chrono::Local;
 use dodo::Command;
-use dodo::find_file;
+use dodo::find_files;
+use dodo::move_file;
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -39,14 +40,26 @@ fn main() {
                         "[ done ] command only accepts 1 argument! Format is [ dodo done \"name\" ]"
                     );
                 }
-                if let Some(file) = find_file(&val) {
-                    let move_path = Path::new(file.path().parent().unwrap())
-                        .to_path_buf()
-                        .join("done");
-                    fs::copy(file.path(), move_path.join(file.file_name()))
-                        .expect("Failed to move file to done folder!");
-                    fs::remove_file(file.path())
-                        .expect("Failed to remove file from old path folder!");
+
+                let files = find_files(&val, false);
+                if files.len() > 1 {
+                    panic!(
+                        "Found multiple files with name {val}\nRun \"dodo done <path_to_task>\"\n{:?}",
+                        files
+                            .iter()
+                            .map(|x| { x.path().to_string_lossy().replacen("dodos/", "", 1) })
+                            .collect::<Vec<_>>()
+                    )
+                }
+                
+                let name_string = format!("dodos/{}", &val);
+                let name_path = Path::new(&name_string);
+                if name_path.is_file() {
+                    let _ = move_file(&name_path.to_path_buf());
+                } else if files.len() == 1 {
+                    let _ = move_file(&files[0].path());
+                } else {
+                    panic!("No tasks with that name found!")
                 }
             }
             Command::Remove(val) => {
@@ -55,9 +68,25 @@ fn main() {
                         "[ remove | rm ] command only accepts 1 argument! Format is [ dodo rm \"name\" ]"
                     );
                 }
-                if let Some(file) = find_file(&val) {
-                    fs::remove_file(file.path())
-                        .expect("Failed to remove file from old path folder!");
+                let files = find_files(&val, true);
+                if files.len() > 1 {
+                    panic!(
+                        "Found multiple files with name {val}\nRun \"dodo rm <path_to_task>\"\n{:?}",
+                        files
+                            .iter()
+                            .map(|x| { x.path().to_string_lossy().replacen("dodos/", "", 1) })
+                            .collect::<Vec<_>>()
+                    )
+                }
+                
+                let name_string = format!("dodos/{}", &val);
+                let name_path = Path::new(&name_string);
+                if name_path.is_file() {
+                    fs::remove_file(name_path).expect("Failed to remove file!")
+                } else if files.len() == 1 {
+                    fs::remove_file(files[0].path()).expect("Failed to remove file!");
+                } else {
+                    panic!("No tasks with that name found!")
                 }
             }
         }

@@ -1,6 +1,5 @@
 use std::{
-    fs::{self, DirEntry, File},
-    io::Read,
+    fs::{self, DirEntry, File}, io::Read, path::{Path, PathBuf},
 };
 
 #[derive(Clone, Debug)]
@@ -129,16 +128,16 @@ pub fn get_file_content(path: &str) -> Vec<u8> {
     file_buf
 }
 
-pub fn find_file(name: &str) -> Option<DirEntry> {
+pub fn find_files(name: &str, full: bool) -> Vec<DirEntry> {
     fs::read_dir("dodos")
         .unwrap()
         .filter_map(|e| e.ok())
-        .find_map(|e| {
+        .filter_map(|e| {
             fs::read_dir(format!("dodos/{}", e.file_name().to_string_lossy()))
                 .unwrap()
                 .filter_map(|ie| ie.ok())
                 .map(|ie| {
-                    if ie.metadata().unwrap().is_dir() {
+                    if full && ie.metadata().unwrap().is_dir() {
                         fs::read_dir(format!(
                             "dodos/{}/{}",
                             e.file_name().to_string_lossy(),
@@ -152,6 +151,20 @@ pub fn find_file(name: &str) -> Option<DirEntry> {
                     }
                 })
                 .find(|ie| ie.is_some() && ie.as_ref().unwrap().file_name() == name)
-                .unwrap()
         })
+        .map(|e| e.unwrap())
+        .collect()
+}
+
+pub fn move_file(file_path: &PathBuf) -> bool {
+    let move_path = Path::new(file_path.parent().unwrap())
+        .to_path_buf()
+        .join("done");
+    if let Ok(_) = fs::copy(file_path, move_path.join(file_path.file_name().unwrap())) {
+        let remove = fs::remove_file(file_path);
+
+        return remove.is_ok();
+    }
+
+    false
 }
