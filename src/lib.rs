@@ -173,25 +173,21 @@ pub fn find_file<'a>(name: &str, full: bool) -> Result<PathBuf, DodoError> {
     let files: Vec<DirEntry> = fs::read_dir("dodos")
         .unwrap()
         .filter_map(|e| e.ok())
-        .filter_map(|e| {
-            fs::read_dir(format!("dodos/{}", e.file_name().to_string_lossy()))
+        .flat_map(|e| {
+            fs::read_dir(e.path())
                 .unwrap()
                 .filter_map(|ie| ie.ok())
                 .map(|ie| {
                     if full && ie.metadata().unwrap().is_dir() {
-                        fs::read_dir(format!(
-                            "dodos/{}/{}",
-                            e.file_name().to_string_lossy(),
-                            ie.file_name().to_string_lossy()
-                        ))
-                        .unwrap()
-                        .filter_map(|iie| iie.ok())
-                        .find(|iie| iie.file_name() == name)
+                        fs::read_dir(ie.path())
+                            .unwrap()
+                            .filter_map(|iie| iie.ok())
+                            .find(|iie| iie.file_name() == name)
                     } else {
                         Some(ie)
                     }
                 })
-                .find(|ie| ie.is_some() && ie.as_ref().unwrap().file_name() == name)
+                .filter(|ie| ie.is_some() && ie.as_ref().unwrap().file_name() == name)
         })
         .map(|e| e.unwrap())
         .collect();
@@ -201,7 +197,7 @@ pub fn find_file<'a>(name: &str, full: bool) -> Result<PathBuf, DodoError> {
             "Found multiple files with name {name}, please use a more specific name path.\n----\n{:?}",
             files
                 .iter()
-                .map(|x| { x.path().to_string_lossy().replacen("dodos/", "", 1) })
+                .map(|x| { clean_dir_entry_path(x) })
                 .collect::<Vec<_>>()
         )));
     }
@@ -217,6 +213,7 @@ pub fn find_file<'a>(name: &str, full: bool) -> Result<PathBuf, DodoError> {
     Err(DodoError::new(DodoErrorKind::FileNotFound).with_message("No tasks with that name found!"))
 }
 
+
 pub fn move_file(file_path: PathBuf) -> bool {
     let move_path = Path::new(file_path.parent().unwrap())
         .to_path_buf()
@@ -228,4 +225,13 @@ pub fn move_file(file_path: PathBuf) -> bool {
     }
 
     false
+}
+
+fn clean_dir_entry_path(entry: &DirEntry) -> String {
+    entry
+        .path()
+        .to_string_lossy()
+        .replacen("dodos", "", 1)
+        .replacen("\\", "", 1)
+        .replacen("/", "", 1)
 }
