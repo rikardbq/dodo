@@ -1,6 +1,47 @@
 use std::{
-    fs::{self, DirEntry, File}, io::Read, path::{Path, PathBuf},
+    fmt,
+    fs::{self, DirEntry, File},
+    io::Read,
+    path::{Path, PathBuf},
 };
+
+pub enum DodoErrorKind {
+    General,
+    DuplicateFile,
+    FileNotFound,
+}
+
+pub struct DodoError {
+    pub kind: Option<DodoErrorKind>,
+    pub message: Option<String>,
+}
+
+impl DodoError {
+    pub fn new(kind: DodoErrorKind) -> Self {
+        Self {
+            kind: Some(kind),
+            message: None,
+        }
+    }
+
+    pub fn with_message(self, message: &str) -> Self {
+        Self {
+            message: Some(String::from(message)),
+            ..self
+        }
+    }
+}
+
+impl fmt::Display for DodoError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let kind_str = match self.kind.as_ref().unwrap() {
+            DodoErrorKind::General => "Error:General=",
+            DodoErrorKind::FileNotFound => "Error:FileNotFound=",
+            DodoErrorKind::DuplicateFile => "Error:DuplicateFile=",
+        };
+        write!(f, "{kind_str}{}", self.message.clone().unwrap_or_default())
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct New {
@@ -128,8 +169,8 @@ pub fn get_file_content(path: &str) -> Vec<u8> {
     file_buf
 }
 
-pub fn find_files(name: &str, full: bool) -> Vec<DirEntry> {
-    fs::read_dir("dodos")
+pub fn find_file<'a>(name: &str, full: bool) -> Result<PathBuf, DodoError> {
+    let files: Vec<DirEntry> = fs::read_dir("dodos")
         .unwrap()
         .filter_map(|e| e.ok())
         .filter_map(|e| {
@@ -153,14 +194,34 @@ pub fn find_files(name: &str, full: bool) -> Vec<DirEntry> {
                 .find(|ie| ie.is_some() && ie.as_ref().unwrap().file_name() == name)
         })
         .map(|e| e.unwrap())
-        .collect()
+        .collect();
+
+    if files.len() > 1 {
+        return Err(DodoError::new(DodoErrorKind::DuplicateFile).with_message(&format!(
+            "Found multiple files with name {name}, please use a more specific name path.\n----\n{:?}",
+            files
+                .iter()
+                .map(|x| { x.path().to_string_lossy().replacen("dodos/", "", 1) })
+                .collect::<Vec<_>>()
+        )));
+    }
+
+    let name_string = format!("dodos/{}", name);
+    let name_path = Path::new(&name_string);
+    if name_path.is_file() {
+        return Ok(name_path.to_path_buf());
+    } else if files.len() == 1 {
+        return Ok(files[0].path());
+    }
+
+    Err(DodoError::new(DodoErrorKind::FileNotFound).with_message("No tasks with that name found!"))
 }
 
-pub fn move_file(file_path: &PathBuf) -> bool {
+pub fn move_file(file_path: PathBuf) -> bool {
     let move_path = Path::new(file_path.parent().unwrap())
         .to_path_buf()
         .join("done");
-    if let Ok(_) = fs::copy(file_path, move_path.join(file_path.file_name().unwrap())) {
+    if let Ok(_) = fs::copy(&file_path, move_path.join(file_path.file_name().unwrap())) {
         let remove = fs::remove_file(file_path);
 
         return remove.is_ok();
