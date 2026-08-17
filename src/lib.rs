@@ -1,6 +1,6 @@
 use std::{
     fmt,
-    fs::{self, DirEntry, File},
+    fs::{self, File},
     io::Read,
     path::{Path, PathBuf},
 };
@@ -169,8 +169,8 @@ pub fn get_file_content(path: &str) -> Vec<u8> {
     file_buf
 }
 
-pub fn find_file<'a>(name: &str, full: bool) -> Result<PathBuf, DodoError> {
-    let files: Vec<DirEntry> = fs::read_dir("dodos")
+pub fn find_file<'a>(name: &str, full: bool) -> Vec<PathBuf> {
+    let files: Vec<PathBuf> = fs::read_dir("dodos")
         .unwrap()
         .filter_map(|e| e.ok())
         .flat_map(|e| {
@@ -189,30 +189,17 @@ pub fn find_file<'a>(name: &str, full: bool) -> Result<PathBuf, DodoError> {
                 })
                 .filter(|ie| ie.is_some() && ie.as_ref().unwrap().file_name() == name)
         })
-        .map(|e| e.unwrap())
+        .map(|e| e.unwrap().path())
         .collect();
-
-    if files.len() > 1 {
-        return Err(DodoError::new(DodoErrorKind::DuplicateFile).with_message(&format!(
-            "Found multiple files with name {name}, please use a more specific name path.\n----\n{:?}",
-            files
-                .iter()
-                .map(|x| { clean_dir_entry_path(x) })
-                .collect::<Vec<_>>()
-        )));
-    }
 
     let name_string = format!("dodos/{}", name);
     let name_path = Path::new(&name_string);
     if name_path.is_file() {
-        return Ok(name_path.to_path_buf());
-    } else if files.len() == 1 {
-        return Ok(files[0].path());
+        return vec![name_path.to_path_buf()];
     }
 
-    Err(DodoError::new(DodoErrorKind::FileNotFound).with_message("No tasks with that name found!"))
+    files
 }
-
 
 pub fn move_file(file_path: PathBuf) -> bool {
     let move_path = Path::new(file_path.parent().unwrap())
@@ -227,11 +214,26 @@ pub fn move_file(file_path: PathBuf) -> bool {
     false
 }
 
-fn clean_dir_entry_path(entry: &DirEntry) -> String {
+pub fn clean_entry_path(entry: &str) -> String {
     entry
-        .path()
-        .to_string_lossy()
         .replacen("dodos", "", 1)
         .replacen("\\", "", 1)
         .replacen("/", "", 1)
+}
+
+pub fn check_files_list(name: &str, files: &Vec<PathBuf>) {
+    if files.len() > 1 {
+        let error = DodoError::new(DodoErrorKind::DuplicateFile).with_message(&format!(
+            "Found multiple files with name {name}.\n----\n{:?}",
+            files
+                .iter()
+                .map(|x| { clean_entry_path(&x.to_string_lossy()) })
+                .collect::<Vec<_>>()
+        ));
+        panic!("{error}");
+    } else if files.len() == 0 {
+        let error = DodoError::new(DodoErrorKind::FileNotFound)
+            .with_message("No tasks with that name found!");
+        panic!("{error}");
+    }
 }

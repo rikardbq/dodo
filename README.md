@@ -30,7 +30,7 @@
         - priority tags are simply part of keys field
     - searchable on date, name, description, keywords
         - filters will be composable
-        - i.e (((this and that) and not thing) or other)
+        - i.e ((this and that) and not thing) or other
     - done tasks are in done folder inside the **YYYYMMDD** folder
     - **example folder structure**
         - dodos (gives the todos a root path to not collide with any other folders which may use the same naming)
