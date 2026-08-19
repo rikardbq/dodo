@@ -1,6 +1,6 @@
 use std::{
     fmt,
-    fs::{self, File},
+    fs::{self, DirEntry, File},
     io::Read,
     path::{Path, PathBuf},
 };
@@ -55,10 +55,19 @@ pub struct New {
 }
 
 #[derive(Clone, Debug)]
+pub struct List {
+    pub all: bool,
+    pub done: bool,
+    pub filter: Option<String>,
+    pub search: Option<String>,
+}
+
+#[derive(Clone, Debug)]
 pub enum Command {
     New(New),
     Done(String),
     Remove(String),
+    List(List),
 }
 
 // impl fmt::Display for Command {
@@ -84,6 +93,17 @@ impl Flags for New {
     }
 }
 
+impl Flags for List {
+    fn default() -> Self {
+        Self {
+            all: false,
+            done: false,
+            filter: None,
+            search: None,
+        }
+    }
+}
+
 impl New {
     pub fn set_name(&mut self, name: String) {
         self.name = Some(name);
@@ -93,6 +113,21 @@ impl New {
     }
     pub fn set_keys(&mut self, keys: Vec<String>) {
         self.keys = Some(keys);
+    }
+}
+
+impl List {
+    pub fn set_all(&mut self, all: bool) {
+        self.all = all;
+    }
+    pub fn set_done(&mut self, done: bool) {
+        self.done = done;
+    }
+    pub fn set_filter(&mut self, filter: String) {
+        self.filter = Some(filter);
+    }
+    pub fn set_search(&mut self, search: String) {
+        self.search = Some(search);
     }
 }
 
@@ -110,7 +145,20 @@ impl Arguments {
 }
 
 pub fn arg_has_val(cli_args: &Vec<String>, idx: usize) -> bool {
-    cli_args.len() == idx + 1
+    let mut predicate = cli_args.len() != idx + 1;
+    if predicate {
+        let val = cli_args[idx + 1].clone();
+        predicate = predicate && !val.starts_with("-");
+    }
+
+    predicate
+}
+
+pub fn get_flag_val(cli_args: &Vec<String>, idx: usize) -> String {
+    if !arg_has_val(cli_args, idx) {
+        panic!("Flag {} has no value!", cli_args[idx]);
+    }
+    cli_args[idx + 1].clone()
 }
 
 pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
@@ -118,18 +166,34 @@ pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
     cli_args.iter().enumerate().for_each(|(i, x)| {
         if x.starts_with("-") {
             let formatted_flag = x.replace("-", "");
-            if arg_has_val(cli_args, i) {
-                panic!("Flag {x} has no value!");
-            }
-            let flag_val = &cli_args[i + 1];
             if let Some(cmd) = &mut args.command {
                 match cmd {
                     Command::New(f) => match formatted_flag.as_str() {
-                        "name" | "n" => f.set_name(flag_val.clone()),
-                        "desc" | "d" => f.set_desc(flag_val.clone()),
-                        "keys" | "k" => {
-                            f.set_keys(flag_val.split(" ").map(|x| x.to_string()).collect())
+                        "name" | "n" => f.set_name(get_flag_val(cli_args, i)),
+                        "desc" | "d" => f.set_desc(get_flag_val(cli_args, i)),
+                        "keys" | "k" => f.set_keys(
+                            get_flag_val(cli_args, i)
+                                .split(" ")
+                                .map(|x| x.to_string())
+                                .collect(),
+                        ),
+                        _ => panic!("Unknown flag! {formatted_flag}"),
+                    },
+                    Command::List(f) => match formatted_flag.as_str() {
+                        "filter" | "f" => f.set_filter(get_flag_val(cli_args, i)),
+                        "search" | "s" => f.set_search(get_flag_val(cli_args, i)),
+                        "all" | "a" => {
+                            if arg_has_val(cli_args, i) {
+                                panic!("The \"-all\" flag does not accept an argument!");
+                            }
+                            f.set_all(true);
                         }
+                        "done" | "d" => {
+                            if arg_has_val(cli_args, i) {
+                                panic!("The \"-done\" flag does not accept an argument!");
+                            }
+                            f.set_done(true);
+                        },
                         _ => panic!("Unknown flag! {formatted_flag}"),
                     },
                     _ => {}
@@ -141,16 +205,19 @@ pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
                     args.set_command(Command::New(New::default()));
                 }
                 "done" => {
-                    if arg_has_val(cli_args, i) {
+                    if !arg_has_val(cli_args, i) {
                         panic!("Command {x} has no value!");
                     }
                     args.set_command(Command::Done(cli_args[i + 1].clone()));
                 }
                 "remove" | "rm" => {
-                    if arg_has_val(cli_args, i) {
+                    if !arg_has_val(cli_args, i) {
                         panic!("Command {x} has no value!");
                     }
                     args.set_command(Command::Remove(cli_args[i + 1].clone()));
+                }
+                "list" | "ls" => {
+                    args.set_command(Command::List(List::default()));
                 }
                 _ => {}
             };
@@ -158,6 +225,15 @@ pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
     });
 
     args
+}
+
+pub fn list_tasks() -> Vec<DirEntry> {
+    fs::read_dir("dodos")
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .flat_map(|e| fs::read_dir(e.path()).unwrap().filter_map(|ie| ie.ok()))
+        .filter(|e| e.metadata().unwrap().is_file())
+        .collect()
 }
 
 pub fn get_file_content(path: &str) -> Vec<u8> {

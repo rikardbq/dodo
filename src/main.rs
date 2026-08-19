@@ -3,7 +3,10 @@ use dodo::Command;
 use dodo::DodoError;
 use dodo::DodoErrorKind;
 use dodo::check_files_list_for_error;
+use dodo::clean_entry_path;
 use dodo::find_file;
+use dodo::get_file_content;
+use dodo::list_tasks;
 use dodo::move_file;
 use std::env;
 use std::fs;
@@ -15,7 +18,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     println!("args length = {}", args.len());
     if args.len() >= 2 {
-        let date = Local::now().format("%Y%m%d").to_string();
+        let date = Local::now().format("%Y-%m-%d").to_string();
         let path_string = format!("dodos/{date}");
         let done_path_string = format!("{path_string}/done");
         let arguments = parse_args(&args);
@@ -66,23 +69,29 @@ fn main() {
                 check_files_list_for_error(&val, &files);
                 fs::remove_file(files[0].clone()).expect("Failed to remove file!");
             }
+            Command::List(flags) => {
+                if flags.all {
+                    println!("--all flag passed");
+                }
+                list_tasks().iter().for_each(|x| {
+                    let path = x.path();
+                    let task = x.file_name();
+                    let parent = path.parent().unwrap().to_string_lossy();
+                    let file_content = get_file_content(&path.to_string_lossy());
+                    let file_string = String::from_utf8_lossy(&file_content);
+                    let file_split: Vec<&str> =
+                        file_string.split("\r\n").filter(|l| l.len() > 0).collect();
+                    let keys = file_split[2].split("=").collect::<Vec<&str>>()[1];
+                    assert_eq!(file_split.len(), 3);
+                    println!(
+                        "[{}][{}] - {}",
+                        clean_entry_path(&parent),
+                        keys,
+                        task.to_string_lossy()
+                    );
+                });
+            }
         }
         println!("{} {}", args[0], args[1]);
     }
-    println!("terminated");
-    // let file_string = String::from_utf8_lossy(&get_file_content("example")).replace("\r\n", " ");
-    // let file_string_split = file_string
-    //     .split("#####")
-    //     .map(|x| x.trim())
-    //     .collect::<Vec<_>>();
-    // println!("BEFORE: {file_string:?}");
-    // assert!(file_string_split.len() == 3);
-    // println!("AFTER: {file_string_split:?}");
-    // println!(
-    //     "NAME={}\nDESC={}\nKEYWORDS={}",
-    //     file_string_split[0], file_string_split[1], file_string_split[2]
-    // );
-    // let keywords_split = file_string_split[2].split(",").collect::<Vec<_>>();
-    // println!("KEYWORDS_SPLIT: {keywords_split:?}");
-    // println!("todo: create dodo, make no mistakes!");
 }
