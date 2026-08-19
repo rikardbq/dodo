@@ -2,7 +2,7 @@ use chrono::Local;
 use dodo::Command;
 use dodo::DodoError;
 use dodo::DodoErrorKind;
-use dodo::check_files_list;
+use dodo::check_files_list_for_error;
 use dodo::find_file;
 use dodo::move_file;
 use std::env;
@@ -28,11 +28,9 @@ fn main() {
                 }
                 let files = find_file(&name, true);
                 if files.len() > 0 {
-                    panic!(
-                        "{}",
-                        DodoError::new(DodoErrorKind::DuplicateFile)
-                            .with_message(&format!("Task with name {name} already exist!"))
-                    );
+                    DodoError::new(DodoErrorKind::DuplicateFile)
+                        .with_message(&format!("Task with name {name} already exist!"))
+                        .create_panic();
                 }
 
                 fs::write(
@@ -54,8 +52,8 @@ fn main() {
                 }
 
                 let files = find_file(&val, false);
-                check_files_list(&val, &files);
-                move_file(files[0].clone());
+                check_files_list_for_error(&val, &files);
+                move_file(&files[0]);
             }
             Command::Remove(val) => {
                 if args.len() > 3 {
@@ -65,7 +63,7 @@ fn main() {
                 }
 
                 let files = find_file(&val, true);
-                check_files_list(&val, &files);
+                check_files_list_for_error(&val, &files);
                 fs::remove_file(files[0].clone()).expect("Failed to remove file!");
             }
         }

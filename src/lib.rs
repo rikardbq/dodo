@@ -20,7 +20,7 @@ impl DodoError {
     pub fn new(kind: DodoErrorKind) -> Self {
         Self {
             kind: Some(kind),
-            message: None,
+            message: Some(String::from("Something went wrong!")),
         }
     }
 
@@ -29,6 +29,10 @@ impl DodoError {
             message: Some(String::from(message)),
             ..self
         }
+    }
+
+    pub fn create_panic(self) {
+        panic!("{self}");
     }
 }
 
@@ -201,7 +205,7 @@ pub fn find_file<'a>(name: &str, full: bool) -> Vec<PathBuf> {
     files
 }
 
-pub fn move_file(file_path: PathBuf) -> bool {
+pub fn move_file(file_path: &PathBuf) -> bool {
     let move_path = Path::new(file_path.parent().unwrap())
         .to_path_buf()
         .join("done");
@@ -221,19 +225,20 @@ pub fn clean_entry_path(entry: &str) -> String {
         .replacen("/", "", 1)
 }
 
-pub fn check_files_list(name: &str, files: &Vec<PathBuf>) {
+pub fn check_files_list_for_error(name: &str, files: &Vec<PathBuf>) {
     if files.len() > 1 {
-        let error = DodoError::new(DodoErrorKind::DuplicateFile).with_message(&format!(
-            "Found multiple files with name {name}.\n----\n{:?}",
-            files
-                .iter()
-                .map(|x| { clean_entry_path(&x.to_string_lossy()) })
-                .collect::<Vec<_>>()
-        ));
-        panic!("{error}");
+        DodoError::new(DodoErrorKind::DuplicateFile)
+            .with_message(&format!(
+                "Found multiple files with name {name}.\n----\n{:?}",
+                files
+                    .iter()
+                    .map(|x| { clean_entry_path(&x.to_string_lossy()) })
+                    .collect::<Vec<_>>()
+            ))
+            .create_panic();
     } else if files.len() == 0 {
-        let error = DodoError::new(DodoErrorKind::FileNotFound)
-            .with_message("No tasks with that name found!");
-        panic!("{error}");
+        DodoError::new(DodoErrorKind::FileNotFound)
+            .with_message("No tasks with that name found!")
+            .create_panic();
     }
 }
