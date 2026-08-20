@@ -164,7 +164,9 @@ pub fn arg_has_val(cli_args: &Vec<String>, idx: usize) -> bool {
 
 pub fn get_flag_val(cli_args: &Vec<String>, idx: usize) -> String {
     if !arg_has_val(cli_args, idx) {
-        panic!("Flag {} has no value!", cli_args[idx]);
+        DodoError::new(DodoErrorKind::FlagValue)
+            .with_message(&format!("Flag {} has no value!", cli_args[idx]))
+            .create_panic();
     }
     cli_args[idx + 1].clone()
 }
