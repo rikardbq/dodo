@@ -9,6 +9,10 @@ pub enum DodoErrorKind {
     General,
     DuplicateFile,
     FileNotFound,
+    UnknownFlag,
+    FlagValue,
+    CommandValue,
+    MalformedTask,
 }
 
 pub struct DodoError {
@@ -39,9 +43,13 @@ impl DodoError {
 impl fmt::Display for DodoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let kind_str = match self.kind.as_ref().unwrap() {
-            DodoErrorKind::General => "Error:General=",
-            DodoErrorKind::FileNotFound => "Error:FileNotFound=",
-            DodoErrorKind::DuplicateFile => "Error:DuplicateFile=",
+            DodoErrorKind::General => "ERROR::General=",
+            DodoErrorKind::FileNotFound => "ERROR::FileNotFound=",
+            DodoErrorKind::DuplicateFile => "ERROR::DuplicateFile=",
+            DodoErrorKind::UnknownFlag => "ERROR::UnknownFlag=",
+            DodoErrorKind::FlagValue => "ERROR::FlagValue=",
+            DodoErrorKind::CommandValue => "ERROR::CommandValue=",
+            DodoErrorKind::MalformedTask => "ERROR::MalformedTask=",
         };
         write!(f, "{kind_str}{}", self.message.clone().unwrap_or_default())
     }
@@ -177,24 +185,28 @@ pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
                                 .map(|x| x.to_string())
                                 .collect(),
                         ),
-                        _ => panic!("Unknown flag! {formatted_flag}"),
+                        _ => DodoError::new(DodoErrorKind::UnknownFlag).with_message(&format!("Unknown flag! {formatted_flag}")).create_panic(),
                     },
                     Command::List(f) => match formatted_flag.as_str() {
                         "filter" | "f" => f.set_filter(get_flag_val(cli_args, i)),
                         "search" | "s" => f.set_search(get_flag_val(cli_args, i)),
                         "all" | "a" => {
                             if arg_has_val(cli_args, i) {
-                                panic!("The \"-all\" flag does not accept an argument!");
+                                DodoError::new(DodoErrorKind::FlagValue)
+                                    .with_message(&format!("The \"-{formatted_flag}\" flag does not accept an argument!"))
+                                    .create_panic();
                             }
                             f.set_all(true);
                         }
                         "done" | "d" => {
                             if arg_has_val(cli_args, i) {
-                                panic!("The \"-done\" flag does not accept an argument!");
+                                DodoError::new(DodoErrorKind::FlagValue)
+                                    .with_message(&format!("The \"-{formatted_flag}\" flag does not accept an argument!"))
+                                    .create_panic();
                             }
                             f.set_done(true);
-                        },
-                        _ => panic!("Unknown flag! {formatted_flag}"),
+                        }
+                        _ => DodoError::new(DodoErrorKind::UnknownFlag).with_message(&format!("Unknown flag! {formatted_flag}")).create_panic(),
                     },
                     _ => {}
                 }
@@ -206,13 +218,13 @@ pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
                 }
                 "done" => {
                     if !arg_has_val(cli_args, i) {
-                        panic!("Command {x} has no value!");
+                        DodoError::new(DodoErrorKind::CommandValue).with_message(&format!("Command {x} has no value!")).create_panic();
                     }
                     args.set_command(Command::Done(cli_args[i + 1].clone()));
                 }
                 "remove" | "rm" => {
                     if !arg_has_val(cli_args, i) {
-                        panic!("Command {x} has no value!");
+                        DodoError::new(DodoErrorKind::CommandValue).with_message(&format!("Command {x} has no value!")).create_panic();
                     }
                     args.set_command(Command::Remove(cli_args[i + 1].clone()));
                 }

@@ -10,6 +10,7 @@ use dodo::list_tasks;
 use dodo::move_file;
 use std::env;
 use std::fs;
+use std::fs::DirEntry;
 use std::path::Path;
 
 use dodo::parse_args;
@@ -70,26 +71,40 @@ fn main() {
                 fs::remove_file(files[0].clone()).expect("Failed to remove file!");
             }
             Command::List(flags) => {
-                if flags.all {
-                    println!("--all flag passed");
-                }
-                list_tasks().iter().for_each(|x| {
+                let extract_and_print_task = |x: &DirEntry| {
                     let path = x.path();
                     let task = x.file_name();
                     let parent = path.parent().unwrap().to_string_lossy();
                     let file_content = get_file_content(&path.to_string_lossy());
                     let file_string = String::from_utf8_lossy(&file_content);
-                    let file_split: Vec<&str> =
-                        file_string.split("\r\n").filter(|l| l.len() > 0).collect();
+                    let file_split: Vec<&str> = file_string
+                        .split("\r\n")
+                        .filter(|l| l.trim().len() > 0)
+                        .collect();
+                    if file_split.len() != 3 {
+                        DodoError::new(DodoErrorKind::MalformedTask)
+                            .with_message(&format!(
+                                "Task \"{}\" row count is wrong, expected 3 but was {}",
+                                task.to_string_lossy(),
+                                file_split.len()
+                            ))
+                            .create_panic();
+                    }
                     let keys = file_split[2].split("=").collect::<Vec<&str>>()[1];
-                    assert_eq!(file_split.len(), 3);
                     println!(
                         "[{}][{}] - {}",
                         clean_entry_path(&parent),
                         keys,
                         task.to_string_lossy()
                     );
-                });
+                };
+                if flags.all {
+                    list_tasks().iter().for_each(extract_and_print_task);
+                    println!("-all flag passed");
+                } else if flags.done {
+                    list_tasks().iter().for_each(extract_and_print_task);
+                    println!("-done flag passed");
+                }
             }
         }
         println!("{} {}", args[0], args[1]);
