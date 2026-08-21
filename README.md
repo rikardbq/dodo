@@ -7,7 +7,7 @@
 - new (check name availability)
     - --name -n "\<name string\>"
     - --desc -d "\<description string\>"
-    - --keys -k "\<key words\>"
+    - --tags -t "\<key words\>"
 - remove / rm
     - "\<name\>"
 - done
@@ -26,8 +26,8 @@
         - formatted according to:
             - **name=the name**
             - **desc=some description here** (optional)
-            - **keys=key,words,goes,here** (optional)
-        - priority tags are simply part of keys field
+            - **tags=key,words,goes,here** (optional)
+        - priority tags are simply part of tags field
     - searchable on date, name, description, keywords
         - filters will be composable
         - i.e ((this and that) and not thing) or other
@@ -39,6 +39,6 @@
                 - ```
                     name=update_readme
                     desc=update the readme with some examples
-                    keys=low,readme,examples
+                    tags=low,readme,examples
                 - done (folder)
                     - create_repo (name of done file)

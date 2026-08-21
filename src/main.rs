@@ -40,10 +40,10 @@ fn main() {
                 fs::write(
                     format!("{path_string}/{name}"),
                     format!(
-                        "name={}\r\ndesc={}\r\nkeys={}\r\n",
+                        "name={}\r\ndesc={}\r\ntags={}\r\n",
                         name,
                         flags.desc.unwrap_or_default(),
-                        flags.keys.unwrap_or_default().join(",")
+                        flags.tags.unwrap_or_default().join(",")
                     ),
                 )
                 .expect("Failed to write to file!");
@@ -70,7 +70,7 @@ fn main() {
                 check_files_list_for_error(&val, &files);
                 fs::remove_file(files[0].clone()).expect("Failed to remove file!");
             }
-            Command::List(flags) => {
+            Command::List(_flags) => {
                 let extract_and_print_task = |x: &DirEntry| {
                     let path = x.path();
                     let task = x.file_name();
@@ -90,21 +90,16 @@ fn main() {
                             ))
                             .create_panic();
                     }
-                    let keys = file_split[2].split("=").collect::<Vec<&str>>()[1];
+                    let tags = file_split[2].split("=").collect::<Vec<&str>>()[1];
                     println!(
                         "[{}][{}] - {}",
                         clean_entry_path(&parent),
-                        keys,
+                        tags,
                         task.to_string_lossy()
                     );
                 };
-                if flags.all {
-                    list_tasks().iter().for_each(extract_and_print_task);
-                    println!("-all flag passed");
-                } else if flags.done {
-                    list_tasks().iter().for_each(extract_and_print_task);
-                    println!("-done flag passed");
-                }
+
+                list_tasks().iter().for_each(extract_and_print_task);
             }
         }
         println!("{} {}", args[0], args[1]);

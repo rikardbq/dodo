@@ -59,13 +59,11 @@ impl fmt::Display for DodoError {
 pub struct New {
     pub name: Option<String>,
     pub desc: Option<String>,
-    pub keys: Option<Vec<String>>,
+    pub tags: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug)]
 pub struct List {
-    pub all: bool,
-    pub done: bool,
     pub filter: Option<String>,
     pub search: Option<String>,
 }
@@ -96,7 +94,7 @@ impl Flags for New {
         Self {
             name: None,
             desc: None,
-            keys: None,
+            tags: None,
         }
     }
 }
@@ -104,8 +102,6 @@ impl Flags for New {
 impl Flags for List {
     fn default() -> Self {
         Self {
-            all: false,
-            done: false,
             filter: None,
             search: None,
         }
@@ -119,18 +115,12 @@ impl New {
     pub fn set_desc(&mut self, desc: String) {
         self.desc = Some(desc);
     }
-    pub fn set_keys(&mut self, keys: Vec<String>) {
-        self.keys = Some(keys);
+    pub fn set_tags(&mut self, tags: Vec<String>) {
+        self.tags = Some(tags);
     }
 }
 
 impl List {
-    pub fn set_all(&mut self, all: bool) {
-        self.all = all;
-    }
-    pub fn set_done(&mut self, done: bool) {
-        self.done = done;
-    }
     pub fn set_filter(&mut self, filter: String) {
         self.filter = Some(filter);
     }
@@ -181,34 +171,22 @@ pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
                     Command::New(f) => match formatted_flag.as_str() {
                         "name" | "n" => f.set_name(get_flag_val(cli_args, i)),
                         "desc" | "d" => f.set_desc(get_flag_val(cli_args, i)),
-                        "keys" | "k" => f.set_keys(
+                        "tags" | "t" => f.set_tags(
                             get_flag_val(cli_args, i)
                                 .split(" ")
                                 .map(|x| x.to_string())
                                 .collect(),
                         ),
-                        _ => DodoError::new(DodoErrorKind::UnknownFlag).with_message(&format!("Unknown flag! {formatted_flag}")).create_panic(),
+                        _ => DodoError::new(DodoErrorKind::UnknownFlag)
+                            .with_message(&format!("Unknown flag! {formatted_flag}"))
+                            .create_panic(),
                     },
                     Command::List(f) => match formatted_flag.as_str() {
                         "filter" | "f" => f.set_filter(get_flag_val(cli_args, i)),
                         "search" | "s" => f.set_search(get_flag_val(cli_args, i)),
-                        "all" | "a" => {
-                            if arg_has_val(cli_args, i) {
-                                DodoError::new(DodoErrorKind::FlagValue)
-                                    .with_message(&format!("The \"-{formatted_flag}\" flag does not accept an argument!"))
-                                    .create_panic();
-                            }
-                            f.set_all(true);
-                        }
-                        "done" | "d" => {
-                            if arg_has_val(cli_args, i) {
-                                DodoError::new(DodoErrorKind::FlagValue)
-                                    .with_message(&format!("The \"-{formatted_flag}\" flag does not accept an argument!"))
-                                    .create_panic();
-                            }
-                            f.set_done(true);
-                        }
-                        _ => DodoError::new(DodoErrorKind::UnknownFlag).with_message(&format!("Unknown flag! {formatted_flag}")).create_panic(),
+                        _ => DodoError::new(DodoErrorKind::UnknownFlag)
+                            .with_message(&format!("Unknown flag! {formatted_flag}"))
+                            .create_panic(),
                     },
                     _ => {}
                 }
@@ -220,13 +198,17 @@ pub fn parse_args(cli_args: &Vec<String>) -> Arguments {
                 }
                 "done" => {
                     if !arg_has_val(cli_args, i) {
-                        DodoError::new(DodoErrorKind::CommandValue).with_message(&format!("Command {x} has no value!")).create_panic();
+                        DodoError::new(DodoErrorKind::CommandValue)
+                            .with_message(&format!("Command {x} has no value!"))
+                            .create_panic();
                     }
                     args.set_command(Command::Done(cli_args[i + 1].clone()));
                 }
                 "remove" | "rm" => {
                     if !arg_has_val(cli_args, i) {
-                        DodoError::new(DodoErrorKind::CommandValue).with_message(&format!("Command {x} has no value!")).create_panic();
+                        DodoError::new(DodoErrorKind::CommandValue)
+                            .with_message(&format!("Command {x} has no value!"))
+                            .create_panic();
                     }
                     args.set_command(Command::Remove(cli_args[i + 1].clone()));
                 }
