@@ -70,7 +70,33 @@ fn main() {
                 check_files_list_for_error(&val, &files);
                 fs::remove_file(files[0].clone()).expect("Failed to remove file!");
             }
-            Command::List(_flags) => {
+            Command::List(flags) => {
+                /*
+                struct FilterPredicate {
+                    or: bool,
+                    and: bool,
+                    not: bool,
+                }
+                while something {
+                    fn parse_and_filter(filter_part: &str, tasks: Vec<Vec<&str>>)
+                    
+                    iterate and keep composing bools to or / and / not predicate struct fields
+                    
+                    store the filter parts that have been parsed and iterated so that a final filtering of the whole task list may happen?
+                }
+                flags filter precedence
+                let mut predicate = true;
+                // pseudo code -> {
+                    if filter contains "and" && (idx - 1) == " " && (idx + 1) == " "
+                    split_filter_and
+                    &mut predicate = split_filter_and[0] && split_filter_and[1];    
+                    if filter contains "or" && (idx - 1) == " " && (idx + 1) == " "
+                    split_filter_or
+                    &mut predicate = predicate || handle_and(split_filter_or)
+                }
+                
+                return predicate;
+                */
                 let extract_and_print_task = |x: &DirEntry| {
                     let path = x.path();
                     let task = x.file_name();
